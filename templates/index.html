@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block title %}Transpek - Approval System{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="text-center mb-5">
+                <h1 class="display-4 text-primary">Transpek Approval System</h1>
+                <p class="lead">Manage Job Work Reports and IM Purchase Requisitions</p>
+            </div>
+
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <!-- Main Navigation Cards -->
+            <div class="row g-4">
+                <!-- Job Work Reports Section -->
+                <div class="col-md-6">
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-body text-center">
+                            <div class="mb-3">
+                                <i class="fas fa-clipboard-list fa-3x text-primary"></i>
+                            </div>
+                            <h5 class="card-title">Job Work Reports</h5>
+                            <p class="card-text">Manage and track job work reports with detailed approval workflows.</p>
+                            <div class="d-grid gap-2">
+                                <a href="{{ url_for('job_work_reports') }}" class="btn btn-outline-primary">
+                                    <i class="fas fa-list me-2"></i>View Reports
+                                </a>
+                                <a href="{{ url_for('submit_job_work') }}" class="btn btn-primary">
+                                    <i class="fas fa-plus me-2"></i>Submit New Report
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- IM Purchase Requisitions Section -->
+                <div class="col-md-6">
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-body text-center">
+                            <div class="mb-3">
+                                <i class="fas fa-shopping-cart fa-3x text-success"></i>
+                            </div>
+                            <h5 class="card-title">IM Purchase Requisitions</h5>
+                            <p class="card-text">Handle purchase requisitions and procurement approvals.</p>
+                            <div class="d-grid gap-2">
+                                <a href="{{ url_for('im_purchase_requisitions') }}" class="btn btn-outline-success">
+                                    <i class="fas fa-list me-2"></i>View Requisitions
+                                </a>
+                                <a href="{{ url_for('submit_im_purchase') }}" class="btn btn-success">
+                                    <i class="fas fa-plus me-2"></i>Submit New Requisition
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Legacy System Link -->
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="card border-warning">
+                        <div class="card-body text-center">
+                            <h6 class="card-title text-warning">
+                                <i class="fas fa-exclamation-triangle me-2"></i>Legacy System
+                            </h6>
+                            <p class="card-text small">Access the old approval system for backward compatibility.</p>
+                            <a href="{{ url_for('legacy_index') }}" class="btn btn-outline-warning btn-sm">
+                                <i class="fas fa-archive me-2"></i>Legacy Approvals
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Stats -->
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="card bg-light">
+                        <div class="card-body">
+                            <h6 class="card-title">
+                                <i class="fas fa-chart-bar me-2"></i>Quick Statistics
+                            </h6>
+                            <div class="row text-center">
+                                <div class="col-md-4">
+                                    <div class="border-end">
+                                        <h4 class="text-primary" id="jobWorkCount">-</h4>
+                                        <small class="text-muted">Job Work Reports</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="border-end">
+                                        <h4 class="text-success" id="purchaseCount">-</h4>
+                                        <small class="text-muted">Purchase Requisitions</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <h4 class="text-warning" id="pendingCount">-</h4>
+                                    <small class="text-muted">Pending Approvals</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Load quick statistics
+document.addEventListener('DOMContentLoaded', function() {
+    // This would be populated with actual API calls in a real implementation
+    // For now, we'll show placeholder data
+    document.getElementById('jobWorkCount').textContent = '0';
+    document.getElementById('purchaseCount').textContent = '0';
+    document.getElementById('pendingCount').textContent = '0';
+});
+</script>
+{% endblock %} 

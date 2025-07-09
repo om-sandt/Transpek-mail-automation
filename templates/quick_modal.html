@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Approval Workflow</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .modal {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            max-width: 500px;
+            margin: 50px auto;
+            padding: 30px;
+            text-align: center;
+        }
+        .error {
+            color: #dc3545;
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .success {
+            color: #155724;
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .btn-primary { background: #007bff; color: white; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-danger { background: #dc3545; color: white; }
+        .btn-secondary { background: #6c757d; color: white; }
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 24px;
+            cursor: pointer;
+            color: #999;
+        }
+        .close-btn:hover { color: #333; }
+    </style>
+</head>
+<body>
+    <div class="modal">
+        <div class="close-btn" onclick="window.close()">&times;</div>
+        
+        {% if error %}
+            <div class="error">
+                <h3>❌ Error</h3>
+                <p>{{ error }}</p>
+            </div>
+        {% endif %}
+        
+        {% if success %}
+            <div class="success">
+                <h3>✅ Success</h3>
+                <p>{{ success }}</p>
+            </div>
+        {% endif %}
+        
+        <div style="margin-top: 20px;">
+            <button class="btn btn-secondary" onclick="window.close()">Close</button>
+        </div>
+    </div>
+
+    <script>
+        // Auto-close after 3 seconds if there's an error
+        {% if error %}
+        setTimeout(function() {
+            window.close();
+        }, 3000);
+        {% endif %}
+        
+        // Auto-close after 2 seconds if there's success
+        {% if success %}
+        setTimeout(function() {
+            window.close();
+        }, 2000);
+        {% endif %}
+    </script>
+</body>
+</html> 

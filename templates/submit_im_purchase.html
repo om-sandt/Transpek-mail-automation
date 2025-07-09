@@ -1,0 +1,431 @@
+{% extends "base.html" %}
+
+{% block title %}Submit IM Purchase Requisition - Transpek{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card shadow">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-shopping-cart me-2"></i>Submit IM Purchase Requisition
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <!-- Flash Messages -->
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+
+                    <form method="POST" class="needs-validation" novalidate id="imPurchaseForm">
+                        <button type="button" class="btn btn-secondary mb-3" onclick="fillRandomIMPurchase()">Generate Random Data</button>
+                        <div class="row">
+                            <!-- Basic Information -->
+                            <div class="col-md-6">
+                                <h5 class="text-success mb-3">Basic Information</h5>
+                                
+                                <div class="mb-3">
+                                    <label for="No" class="form-label">Requisition Number *</label>
+                                    <input type="number" class="form-control" id="No" name="No" required>
+                                    <div class="invalid-feedback">Please provide a requisition number.</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="Employee_No" class="form-label">Employee Number *</label>
+                                    <input type="text" class="form-control" id="Employee_No" name="Employee_No" required>
+                                    <div class="invalid-feedback">Please provide employee number.</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="Employee_Name" class="form-label">Employee Name *</label>
+                                    <input type="text" class="form-control" id="Employee_Name" name="Employee_Name" required>
+                                    <div class="invalid-feedback">Please provide employee name.</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="Your_Reference" class="form-label">Your Reference *</label>
+                                    <input type="text" class="form-control" id="Your_Reference" name="Your_Reference" required>
+                                    <div class="invalid-feedback">Please provide your reference.</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="Request_Date" class="form-label">Request Date *</label>
+                                    <input type="text" class="form-control" id="Request_Date" name="Request_Date" required>
+                                    <div class="invalid-feedback">Please provide request date.</div>
+                                </div>
+                            </div>
+
+                            <!-- Dates and Timing -->
+                            <div class="col-md-6">
+                                <h5 class="text-success mb-3">Dates and Timing</h5>
+                                
+                                <div class="mb-3">
+                                    <label for="Posting_Date" class="form-label">Posting Date *</label>
+                                    <input type="datetime-local" class="form-control" id="Posting_Date" name="Posting_Date" required>
+                                    <div class="invalid-feedback">Please provide posting date.</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="Expected_Receipt_Date" class="form-label">Expected Receipt Date *</label>
+                                    <input type="datetime-local" class="form-control" id="Expected_Receipt_Date" name="Expected_Receipt_Date" required>
+                                    <div class="invalid-feedback">Please provide expected receipt date.</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="Due_Date" class="form-label">Due Date *</label>
+                                    <input type="datetime-local" class="form-control" id="Due_Date" name="Due_Date" required>
+                                    <div class="invalid-feedback">Please provide due date.</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="Document_Date" class="form-label">Document Date *</label>
+                                    <input type="datetime-local" class="form-control" id="Document_Date" name="Document_Date" required>
+                                    <div class="invalid-feedback">Please provide document date.</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <div class="row">
+                            <!-- Description and Details -->
+                            <div class="col-md-6">
+                                <h5 class="text-success mb-3">Description and Details</h5>
+                                
+                                <div class="mb-3">
+                                    <label for="Posting_Description" class="form-label">Posting Description *</label>
+                                    <textarea class="form-control" id="Posting_Description" name="Posting_Description" rows="3" required></textarea>
+                                    <div class="invalid-feedback">Please provide posting description.</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="Comment" class="form-label">Comment *</label>
+                                    <textarea class="form-control" id="Comment" name="Comment" rows="3" required></textarea>
+                                    <div class="invalid-feedback">Please provide comment.</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="Location_Code" class="form-label">Location Code *</label>
+                                    <input type="text" class="form-control" id="Location_Code" name="Location_Code" required>
+                                    <div class="invalid-feedback">Please provide location code.</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="Purchase_Type" class="form-label">Purchase Type *</label>
+                                    <input type="text" class="form-control" id="Purchase_Type" name="Purchase_Type" required>
+                                    <div class="invalid-feedback">Please provide purchase type.</div>
+                                </div>
+                            </div>
+
+                            <!-- Dimensions and Codes -->
+                            <div class="col-md-6">
+                                <h5 class="text-success mb-3">Dimensions and Codes</h5>
+                                
+                                <div class="mb-3">
+                                    <label for="Shortcut_Dimension_1" class="form-label">Shortcut Dimension 1 *</label>
+                                    <input type="text" class="form-control" id="Shortcut_Dimension_1" name="Shortcut_Dimension_1" required>
+                                    <div class="invalid-feedback">Please provide shortcut dimension 1.</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="Shortcut_Dimension_2" class="form-label">Shortcut Dimension 2 *</label>
+                                    <input type="text" class="form-control" id="Shortcut_Dimension_2" name="Shortcut_Dimension_2" required>
+                                    <div class="invalid-feedback">Please provide shortcut dimension 2.</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="Shortcut_Dimension_3" class="form-label">Shortcut Dimension 3 *</label>
+                                    <input type="text" class="form-control" id="Shortcut_Dimension_3" name="Shortcut_Dimension_3" required>
+                                    <div class="invalid-feedback">Please provide shortcut dimension 3.</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="Shortcut_Dimension_3_Code" class="form-label">Shortcut Dimension 3 Code *</label>
+                                    <input type="text" class="form-control" id="Shortcut_Dimension_3_Code" name="Shortcut_Dimension_3_Code" required>
+                                    <div class="invalid-feedback">Please provide shortcut dimension 3 code.</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="Shortcut_Dimension_6_Code" class="form-label">Shortcut Dimension 6 Code *</label>
+                                    <input type="text" class="form-control" id="Shortcut_Dimension_6_Code" name="Shortcut_Dimension_6_Code" required>
+                                    <div class="invalid-feedback">Please provide shortcut dimension 6 code.</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <div class="row">
+                            <!-- Posting Information -->
+                            <div class="col-md-6">
+                                <h5 class="text-success mb-3">Posting Information</h5>
+                                
+                                <div class="mb-3">
+                                    <label for="Posting_No" class="form-label">Posting Number *</label>
+                                    <input type="number" class="form-control" id="Posting_No" name="Posting_No" required>
+                                    <div class="invalid-feedback">Please provide posting number.</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="Last_Posting_No" class="form-label">Last Posting Number *</label>
+                                    <input type="text" class="form-control" id="Last_Posting_No" name="Last_Posting_No" required>
+                                    <div class="invalid-feedback">Please provide last posting number.</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="Reason_Code" class="form-label">Reason Code *</label>
+                                    <input type="text" class="form-control" id="Reason_Code" name="Reason_Code" required>
+                                    <div class="invalid-feedback">Please provide reason code.</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="Gen_Bus_Posting_Group" class="form-label">Gen Bus Posting Group *</label>
+                                    <input type="text" class="form-control" id="Gen_Bus_Posting_Group" name="Gen_Bus_Posting_Group" required>
+                                    <div class="invalid-feedback">Please provide gen bus posting group.</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="NO_Series" class="form-label">NO Series *</label>
+                                    <input type="text" class="form-control" id="NO_Series" name="NO_Series" required>
+                                    <div class="invalid-feedback">Please provide NO series.</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="Posting_No_Series" class="form-label">Posting NO Series *</label>
+                                    <input type="text" class="form-control" id="Posting_No_Series" name="Posting_No_Series" required>
+                                    <div class="invalid-feedback">Please provide posting NO series.</div>
+                                </div>
+                            </div>
+
+                            <!-- Status and Department -->
+                            <div class="col-md-6">
+                                <h5 class="text-success mb-3">Status and Department</h5>
+                                
+                                <div class="mb-3">
+                                    <label for="Status" class="form-label">Status *</label>
+                                    <select class="form-select" id="Status" name="Status" required>
+                                        <option value="0">Pending</option>
+                                        <option value="1">Approved</option>
+                                        <option value="2">Rejected</option>
+                                    </select>
+                                    <div class="invalid-feedback">Please select status.</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="Posted" class="form-label">Posted *</label>
+                                    <select class="form-select" id="Posted" name="Posted" required>
+                                        <option value="0">No</option>
+                                        <option value="1">Yes</option>
+                                    </select>
+                                    <div class="invalid-feedback">Please select posted status.</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="Dimension_Set_ID" class="form-label">Dimension Set ID *</label>
+                                    <input type="number" class="form-control" id="Dimension_Set_ID" name="Dimension_Set_ID" required>
+                                    <div class="invalid-feedback">Please provide dimension set ID.</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="Responsibility_Center" class="form-label">Responsibility Center *</label>
+                                    <input type="text" class="form-control" id="Responsibility_Center" name="Responsibility_Center" required>
+                                    <div class="invalid-feedback">Please provide responsibility center.</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="Assigned_User_ID" class="form-label">Assigned User ID *</label>
+                                    <input type="text" class="form-control" id="Assigned_User_ID" name="Assigned_User_ID" required>
+                                    <div class="invalid-feedback">Please provide assigned user ID.</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="Indenting_Department" class="form-label">Indenting Department *</label>
+                                    <input type="text" class="form-control" id="Indenting_Department" name="Indenting_Department" required>
+                                    <div class="invalid-feedback">Please provide indenting department.</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="Employee_Department" class="form-label">Employee Department *</label>
+                                    <select class="form-select" id="Employee_Department" name="Employee_Department" required>
+                                        <option value="0">Department 1</option>
+                                        <option value="1">Department 2</option>
+                                        <option value="2">Department 3</option>
+                                    </select>
+                                    <div class="invalid-feedback">Please select employee department.</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <div class="row">
+                            <!-- Job Work and Approval -->
+                            <div class="col-md-6">
+                                <h5 class="text-success mb-3">Job Work and Approval</h5>
+                                
+                                <div class="mb-3">
+                                    <label for="Type_of_Jobwork" class="form-label">Type of Jobwork *</label>
+                                    <input type="number" class="form-control" id="Type_of_Jobwork" name="Type_of_Jobwork" required>
+                                    <div class="invalid-feedback">Please provide type of jobwork.</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="Capital_Item_Premises" class="form-label">Capital Item Premises *</label>
+                                    <input type="text" class="form-control" id="Capital_Item_Premises" name="Capital_Item_Premises" required>
+                                    <div class="invalid-feedback">Please provide capital item premises.</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="Indent_Type" class="form-label">Indent Type *</label>
+                                    <input type="number" class="form-control" id="Indent_Type" name="Indent_Type" required>
+                                    <div class="invalid-feedback">Please provide indent type.</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="Approved_By" class="form-label">Approved By *</label>
+                                    <input type="text" class="form-control" id="Approved_By" name="Approved_By" required>
+                                    <div class="invalid-feedback">Please provide approved by.</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="Approved_Date" class="form-label">Approved Date *</label>
+                                    <input type="datetime-local" class="form-control" id="Approved_Date" name="Approved_Date" required>
+                                    <div class="invalid-feedback">Please provide approved date.</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="Approved_Time" class="form-label">Approved Time *</label>
+                                    <input type="datetime-local" class="form-control" id="Approved_Time" name="Approved_Time" required>
+                                    <div class="invalid-feedback">Please provide approved time.</div>
+                                </div>
+                            </div>
+
+                            <!-- Job Card Information -->
+                            <div class="col-md-6">
+                                <h5 class="text-success mb-3">Job Card Information</h5>
+                                
+                                <div class="mb-3">
+                                    <label for="Job_Card_No" class="form-label">Job Card Number *</label>
+                                    <input type="text" class="form-control" id="Job_Card_No" name="Job_Card_No" required>
+                                    <div class="invalid-feedback">Please provide job card number.</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="Job_Card_Date" class="form-label">Job Card Date *</label>
+                                    <input type="datetime-local" class="form-control" id="Job_Card_Date" name="Job_Card_Date" required>
+                                    <div class="invalid-feedback">Please provide job card date.</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="Job_Task_NO" class="form-label">Job Task Number *</label>
+                                    <input type="text" class="form-control" id="Job_Task_NO" name="Job_Task_NO" required>
+                                    <div class="invalid-feedback">Please provide job task number.</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="Approved_By_Account" class="form-label">Approved By Account *</label>
+                                    <select class="form-select" id="Approved_By_Account" name="Approved_By_Account" required>
+                                        <option value="0">No</option>
+                                        <option value="1">Yes</option>
+                                    </select>
+                                    <div class="invalid-feedback">Please select approved by account.</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="approver_email" class="form-label">Approver Email *</label>
+                                    <input type="email" class="form-control" id="approver_email" name="approver_email" required>
+                                    <div class="invalid-feedback">Please provide a valid approver email.</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('im_purchase_requisitions') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Back to Requisitions
+                            </a>
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-paper-plane me-2"></i>Submit Requisition
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Form validation
+(function() {
+    'use strict';
+    window.addEventListener('load', function() {
+        var forms = document.getElementsByClassName('needs-validation');
+        var validation = Array.prototype.filter.call(forms, function(form) {
+            form.addEventListener('submit', function(event) {
+                if (form.checkValidity() === false) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                form.classList.add('was-validated');
+            }, false);
+        });
+    }, false);
+})();
+
+function fillRandomIMPurchase() {
+    const now = new Date();
+    document.getElementById('No').value = Math.floor(Math.random()*10000);
+    document.getElementById('Employee_No').value = 'EMP' + Math.floor(Math.random()*1000);
+    document.getElementById('Employee_Name').value = 'Alice';
+    document.getElementById('Your_Reference').value = 'REF' + Math.floor(Math.random()*1000);
+    document.getElementById('Request_Date').value = now.toISOString().slice(0,10);
+    document.getElementById('Posting_Date').value = now.toISOString().slice(0,16);
+    document.getElementById('Expected_Receipt_Date').value = now.toISOString().slice(0,16);
+    document.getElementById('Due_Date').value = now.toISOString().slice(0,16);
+    document.getElementById('Document_Date').value = now.toISOString().slice(0,16);
+    document.getElementById('Posting_Description').value = 'Dummy posting description.';
+    document.getElementById('Comment').value = 'Dummy comment.';
+    document.getElementById('Location_Code').value = 'LOC' + Math.floor(Math.random()*100);
+    document.getElementById('Purchase_Type').value = 'Type X';
+    document.getElementById('Shortcut_Dimension_1').value = 'SD1';
+    document.getElementById('Shortcut_Dimension_2').value = 'SD2';
+    document.getElementById('Shortcut_Dimension_3').value = 'SD3';
+    document.getElementById('Shortcut_Dimension_3_Code').value = 'SD3C';
+    document.getElementById('Shortcut_Dimension_6_Code').value = 'SD6C';
+    document.getElementById('Posting_No').value = Math.floor(Math.random()*1000);
+    document.getElementById('Last_Posting_No').value = 'LPN' + Math.floor(Math.random()*1000);
+    document.getElementById('Reason_Code').value = 'RC' + Math.floor(Math.random()*100);
+    document.getElementById('Gen_Bus_Posting_Group').value = 'GBPG';
+    document.getElementById('NO_Series').value = 'NOS' + Math.floor(Math.random()*100);
+    document.getElementById('Posting_No_Series').value = 'PNS' + Math.floor(Math.random()*100);
+    document.getElementById('Status').value = '0';
+    document.getElementById('Dimension_Set_ID').value = Math.floor(Math.random()*1000);
+    document.getElementById('Responsibility_Center').value = 'RC';
+    document.getElementById('Assigned_User_ID').value = 'AUID' + Math.floor(Math.random()*1000);
+    document.getElementById('Posted').value = '0';
+    document.getElementById('Indenting_Department').value = 'Dept';
+    document.getElementById('Employee_Department').value = '0';
+    document.getElementById('Type_of_Jobwork').value = Math.floor(Math.random()*5);
+    document.getElementById('Capital_Item_Premises').value = 'Premises';
+    document.getElementById('Indent_Type').value = Math.floor(Math.random()*3);
+    document.getElementById('Approved_By').value = 'Manager';
+    document.getElementById('Approved_Date').value = now.toISOString().slice(0,16);
+    document.getElementById('Approved_Time').value = now.toISOString().slice(0,16);
+    document.getElementById('Job_Card_No').value = 'JCN' + Math.floor(Math.random()*1000);
+    document.getElementById('Job_Card_Date').value = now.toISOString().slice(0,16);
+    document.getElementById('Job_Task_NO').value = 'JTN' + Math.floor(Math.random()*1000);
+    document.getElementById('Approved_By_Account').value = '0';
+    document.getElementById('approver_email').value = 'approver@example.com';
+}
+</script>
+{% endblock %} 

@@ -1,0 +1,12 @@
+# Database Configuration
+DATABASE_URL=postgresql://username:password@localhost:5432/approval_workflow
+
+# Email Configuration
+SMTP_SERVER=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USERNAME=your-email@gmail.com
+SMTP_PASSWORD=your-app-password
+
+# Flask Configuration
+SECRET_KEY=your-secret-key-here
+FLASK_ENV=development 

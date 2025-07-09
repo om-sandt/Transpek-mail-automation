@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Quick Approve IM Purchase Requisition</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #28a745;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            resize: vertical;
+            min-height: 80px;
+        }
+        .buttons {
+            text-align: center;
+            margin-top: 30px;
+        }
+        .btn {
+            padding: 12px 30px;
+            margin: 0 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        .btn-success {
+            background-color: #28a745;
+            color: white;
+        }
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+        .btn:hover {
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>✅ Quick Approve IM Purchase Requisition</h2>
+            <p>IM Purchase Requisition #{{ im_purchase.id }}</p>
+        </div>
+        
+        <form method="POST" action="{{ url_for('process_im_purchase') }}" id="approvalForm">
+            <input type="hidden" name="request_id" value="{{ im_purchase.id }}">
+            <input type="hidden" name="status" value="Approved">
+            
+            <div class="form-group">
+                <label for="reason">Approval Comments (Optional):</label>
+                <textarea id="reason" name="reason" placeholder="Add any comments about this approval..."></textarea>
+            </div>
+            
+            <div class="buttons">
+                <button type="submit" class="btn btn-success">
+                    ✅ Confirm Approval
+                </button>
+                <button type="button" class="btn btn-secondary" onclick="window.close()">
+                    Cancel
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        document.getElementById('approvalForm').addEventListener('submit', function(e) {
+            e.preventDefault(); // Prevent default form submission
+            
+            // Show loading state
+            const submitBtn = this.querySelector('button[type="submit"]');
+            submitBtn.textContent = 'Processing...';
+            submitBtn.disabled = true;
+            
+            // Submit form via AJAX
+            const formData = new FormData(this);
+            fetch(this.action, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.text())
+            .then(data => {
+                // Show success message briefly
+                submitBtn.textContent = '✅ Approved!';
+                submitBtn.style.backgroundColor = '#28a745';
+                
+                // Close window after 1 second
+                setTimeout(function() {
+                    window.close();
+                }, 1000);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                submitBtn.textContent = 'Error!';
+                submitBtn.style.backgroundColor = '#dc3545';
+                
+                // Close window after 2 seconds even on error
+                setTimeout(function() {
+                    window.close();
+                }, 2000);
+            });
+        });
+    </script>
+</body>
+</html> 

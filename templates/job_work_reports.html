@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+
+{% block title %}Job Work Reports - Transpek{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1><i class="fas fa-clipboard-list text-primary"></i> Job Work Reports</h1>
+                    <p class="text-muted">Manage and track job work reports</p>
+                </div>
+                <a href="{{ url_for('submit_job_work') }}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Submit New Report
+                </a>
+            </div>
+
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            {% if reports %}
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">All Job Work Reports ({{ reports|length }})</h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>No.</th>
+                                        <th>Objective</th>
+                                        <th>Department</th>
+                                        <th>Prepared By</th>
+                                        <th>Expected Completion</th>
+                                        <th>Estimated Amount</th>
+                                        <th>Status</th>
+                                        <th>Approver Email</th>
+                                        <th>Created</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for report in reports %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ report.No_ }}</strong>
+                                        </td>
+                                        <td>
+                                            <div class="text-truncate" style="max-width: 200px;" title="{{ report.OBJECTIVE_OF_JOB_CARD }}">
+                                                {{ report.OBJECTIVE_OF_JOB_CARD[:100] }}{% if report.OBJECTIVE_OF_JOB_CARD|length > 100 %}...{% endif %}
+                                            </div>
+                                        </td>
+                                        <td>{{ report.Department_Name }}</td>
+                                        <td>{{ report.PREPARED_BY_NAME }}</td>
+                                        <td>
+                                            <small class="text-muted">
+                                                {{ report.Expected_Completion.strftime('%Y-%m-%d') if report.Expected_Completion else 'N/A' }}
+                                            </small>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-info">
+                                                ₹{{ "%.2f"|format(report.Estimated_Amount) if report.Estimated_Amount else '0.00' }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {% if report.Approved == 1 %}
+                                                <span class="badge bg-success">
+                                                    <i class="fas fa-check"></i> Approved
+                                                </span>
+                                            {% elif report.Completed == 1 %}
+                                                <span class="badge bg-warning">
+                                                    <i class="fas fa-clock"></i> Completed
+                                                </span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">
+                                                    <i class="fas fa-pending"></i> Pending
+                                                </span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <i class="fas fa-envelope"></i> {{ report.approver_email }}
+                                        </td>
+                                        <td>
+                                            <small class="text-muted">
+                                                {{ report.timestamp.strftime('%Y-%m-%d %H:%M') if report.timestamp else 'N/A' }}
+                                            </small>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                        onclick="confirmDelete({{ report.id }}, 'job work report')">
+                                                    <i class="fas fa-trash"></i> Delete
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
+                    <h3 class="text-muted">No job work reports found</h3>
+                    <p class="text-muted">Get started by submitting your first job work report.</p>
+                    <a href="{{ url_for('submit_job_work') }}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Submit First Report
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete this <span id="itemType"></span>?</p>
+                <p class="text-danger"><strong>This action cannot be undone.</strong></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteForm" method="POST" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function confirmDelete(id, itemType) {
+    document.getElementById('itemType').textContent = itemType;
+    document.getElementById('deleteForm').action = `/delete-job-work/${id}`;
+    new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+</script>
+{% endblock %} 

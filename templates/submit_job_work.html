@@ -1,0 +1,290 @@
+{% extends "base.html" %}
+
+{% block title %}Submit Job Work Report - Transpek{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-clipboard-list me-2"></i>Submit Job Work Report
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <!-- Flash Messages -->
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+
+                    <form method="POST" class="needs-validation" novalidate id="jobWorkForm">
+                        <button type="button" class="btn btn-secondary mb-3" onclick="fillRandomJobWork()">Generate Random Data</button>
+                        <div class="row">
+                            <!-- Basic Information -->
+                            <div class="col-md-6">
+                                <h5 class="text-primary mb-3">Basic Information</h5>
+                                
+                                <div class="mb-3">
+                                    <label for="No_" class="form-label">Report Number *</label>
+                                    <input type="text" class="form-control" id="No_" name="No_" required>
+                                    <div class="invalid-feedback">Please provide a report number.</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="AOP" class="form-label">AOP *</label>
+                                    <input type="number" class="form-control" id="AOP" name="AOP" required>
+                                    <div class="invalid-feedback">Please provide AOP value.</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="OBJECTIVE_OF_JOB_CARD" class="form-label">Objective of Job Card *</label>
+                                    <textarea class="form-control" id="OBJECTIVE_OF_JOB_CARD" name="OBJECTIVE_OF_JOB_CARD" rows="3" required></textarea>
+                                    <div class="invalid-feedback">Please provide the objective.</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="EXPECTED_BENEFITS" class="form-label">Expected Benefits *</label>
+                                    <textarea class="form-control" id="EXPECTED_BENEFITS" name="EXPECTED_BENEFITS" rows="3" required></textarea>
+                                    <div class="invalid-feedback">Please provide expected benefits.</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="COMPLETION_AFTER" class="form-label">Completion After *</label>
+                                    <textarea class="form-control" id="COMPLETION_AFTER" name="COMPLETION_AFTER" rows="3" required></textarea>
+                                    <div class="invalid-feedback">Please provide completion details.</div>
+                                </div>
+                            </div>
+
+                            <!-- Personnel Information -->
+                            <div class="col-md-6">
+                                <h5 class="text-primary mb-3">Personnel Information</h5>
+                                
+                                <div class="mb-3">
+                                    <label for="PREPARED" class="form-label">Prepared By ID *</label>
+                                    <input type="text" class="form-control" id="PREPARED" name="PREPARED" required>
+                                    <div class="invalid-feedback">Please provide preparer ID.</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="PREPARED_BY_NAME" class="form-label">Prepared By Name *</label>
+                                    <input type="text" class="form-control" id="PREPARED_BY_NAME" name="PREPARED_BY_NAME" required>
+                                    <div class="invalid-feedback">Please provide preparer name.</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="CHECKED_BY" class="form-label">Checked By ID *</label>
+                                    <input type="text" class="form-control" id="CHECKED_BY" name="CHECKED_BY" required>
+                                    <div class="invalid-feedback">Please provide checker ID.</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="CHECKED_BY_NAME" class="form-label">Checked By Name *</label>
+                                    <input type="text" class="form-control" id="CHECKED_BY_NAME" name="CHECKED_BY_NAME" required>
+                                    <div class="invalid-feedback">Please provide checker name.</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="Department_Name" class="form-label">Department Name *</label>
+                                    <input type="text" class="form-control" id="Department_Name" name="Department_Name" required>
+                                    <div class="invalid-feedback">Please provide department name.</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <div class="row">
+                            <!-- Job Details -->
+                            <div class="col-md-6">
+                                <h5 class="text-primary mb-3">Job Details</h5>
+                                
+                                <div class="mb-3">
+                                    <label for="Remarks" class="form-label">Remarks *</label>
+                                    <textarea class="form-control" id="Remarks" name="Remarks" rows="3" required></textarea>
+                                    <div class="invalid-feedback">Please provide remarks.</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="Job_Card_Type" class="form-label">Job Card Type *</label>
+                                    <input type="text" class="form-control" id="Job_Card_Type" name="Job_Card_Type" required>
+                                    <div class="invalid-feedback">Please provide job card type.</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="Expected_Completion" class="form-label">Expected Completion Date *</label>
+                                    <input type="datetime-local" class="form-control" id="Expected_Completion" name="Expected_Completion" required>
+                                    <div class="invalid-feedback">Please provide expected completion date.</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="Estimated_Amount" class="form-label">Estimated Amount *</label>
+                                    <input type="number" step="0.01" class="form-control" id="Estimated_Amount" name="Estimated_Amount" required>
+                                    <div class="invalid-feedback">Please provide estimated amount.</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="Sanctioned_Amount" class="form-label">Sanctioned Amount *</label>
+                                    <input type="number" step="0.01" class="form-control" id="Sanctioned_Amount" name="Sanctioned_Amount" required>
+                                    <div class="invalid-feedback">Please provide sanctioned amount.</div>
+                                </div>
+                            </div>
+
+                            <!-- Status and Approval -->
+                            <div class="col-md-6">
+                                <h5 class="text-primary mb-3">Status and Approval</h5>
+                                
+                                <div class="mb-3">
+                                    <label for="Completed" class="form-label">Completed *</label>
+                                    <select class="form-select" id="Completed" name="Completed" required>
+                                        <option value="0">No</option>
+                                        <option value="1">Yes</option>
+                                    </select>
+                                    <div class="invalid-feedback">Please select completion status.</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="Approved" class="form-label">Approved *</label>
+                                    <select class="form-select" id="Approved" name="Approved" required>
+                                        <option value="0">No</option>
+                                        <option value="1">Yes</option>
+                                    </select>
+                                    <div class="invalid-feedback">Please select approval status.</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="Technical_Completion" class="form-label">Technical Completion Date *</label>
+                                    <input type="datetime-local" class="form-control" id="Technical_Completion" name="Technical_Completion" required>
+                                    <div class="invalid-feedback">Please provide technical completion date.</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="Commercial_Completion" class="form-label">Commercial Completion Date *</label>
+                                    <input type="datetime-local" class="form-control" id="Commercial_Completion" name="Commercial_Completion" required>
+                                    <div class="invalid-feedback">Please provide commercial completion date.</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="Approval_Date_Time" class="form-label">Approval Date & Time *</label>
+                                    <input type="datetime-local" class="form-control" id="Approval_Date_Time" name="Approval_Date_Time" required>
+                                    <div class="invalid-feedback">Please provide approval date and time.</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <div class="row">
+                            <!-- Additional Information -->
+                            <div class="col-md-6">
+                                <h5 class="text-primary mb-3">Additional Information</h5>
+                                
+                                <div class="mb-3">
+                                    <label for="Approver_ID" class="form-label">Approver ID *</label>
+                                    <input type="text" class="form-control" id="Approver_ID" name="Approver_ID" required>
+                                    <div class="invalid-feedback">Please provide approver ID.</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="Original_Approval_Date" class="form-label">Original Approval Date *</label>
+                                    <input type="datetime-local" class="form-control" id="Original_Approval_Date" name="Original_Approval_Date" required>
+                                    <div class="invalid-feedback">Please provide original approval date.</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="TPT_Approval_Status" class="form-label">TPT Approval Status *</label>
+                                    <input type="number" class="form-control" id="TPT_Approval_Status" name="TPT_Approval_Status" required>
+                                    <div class="invalid-feedback">Please provide TPT approval status.</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="TPT_Job_Type" class="form-label">TPT Job Type *</label>
+                                    <input type="number" class="form-control" id="TPT_Job_Type" name="TPT_Job_Type" required>
+                                    <div class="invalid-feedback">Please provide TPT job type.</div>
+                                </div>
+                            </div>
+
+                            <!-- Contact Information -->
+                            <div class="col-md-6">
+                                <h5 class="text-primary mb-3">Contact Information</h5>
+                                
+                                <div class="mb-3">
+                                    <label for="approver_email" class="form-label">Approver Email *</label>
+                                    <input type="email" class="form-control" id="approver_email" name="approver_email" required>
+                                    <div class="invalid-feedback">Please provide a valid approver email.</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('job_work_reports') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Back to Reports
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-paper-plane me-2"></i>Submit Report
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Form validation
+(function() {
+    'use strict';
+    window.addEventListener('load', function() {
+        var forms = document.getElementsByClassName('needs-validation');
+        var validation = Array.prototype.filter.call(forms, function(form) {
+            form.addEventListener('submit', function(event) {
+                if (form.checkValidity() === false) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                form.classList.add('was-validated');
+            }, false);
+        });
+    }, false);
+})();
+
+function fillRandomJobWork() {
+    const now = new Date();
+    document.getElementById('No_').value = 'JW-' + Math.floor(Math.random()*10000);
+    document.getElementById('AOP').value = Math.floor(Math.random()*10+1);
+    document.getElementById('OBJECTIVE_OF_JOB_CARD').value = 'Dummy objective for job card.';
+    document.getElementById('EXPECTED_BENEFITS').value = 'Dummy expected benefits.';
+    document.getElementById('COMPLETION_AFTER').value = 'Dummy completion after.';
+    document.getElementById('PREPARED').value = 'EMP' + Math.floor(Math.random()*1000);
+    document.getElementById('PREPARED_BY_NAME').value = 'John Doe';
+    document.getElementById('CHECKED_BY').value = 'CHK' + Math.floor(Math.random()*1000);
+    document.getElementById('CHECKED_BY_NAME').value = 'Jane Smith';
+    document.getElementById('Department_Name').value = 'Engineering';
+    document.getElementById('Remarks').value = 'Dummy remarks.';
+    document.getElementById('Job_Card_Type').value = 'Type A';
+    document.getElementById('Expected_Completion').value = now.toISOString().slice(0,16);
+    document.getElementById('Estimated_Amount').value = (Math.random()*10000).toFixed(2);
+    document.getElementById('Sanctioned_Amount').value = (Math.random()*10000).toFixed(2);
+    document.getElementById('Completed').value = '0';
+    document.getElementById('Approved').value = '0';
+    document.getElementById('Technical_Completion').value = now.toISOString().slice(0,16);
+    document.getElementById('Commercial_Completion').value = now.toISOString().slice(0,16);
+    document.getElementById('Approval_Date_Time').value = now.toISOString().slice(0,16);
+    document.getElementById('Approver_ID').value = 'APR' + Math.floor(Math.random()*1000);
+    document.getElementById('Original_Approval_Date').value = now.toISOString().slice(0,16);
+    document.getElementById('TPT_Approval_Status').value = Math.floor(Math.random()*5);
+    document.getElementById('TPT_Job_Type').value = Math.floor(Math.random()*3);
+    document.getElementById('approver_email').value = 'approver@example.com';
+}
+</script>
+{% endblock %} 
