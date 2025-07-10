@@ -1,5 +1,5 @@
 # Database Configuration
-DATABASE_URL=postgresql://username:password@localhost:5432/approval_workflow
+DATABASE_URL=mssql+pyodbc://username:password@server/database?driver=ODBC+Driver+17+for+SQL+Server
 
 # Email Configuration
 SMTP_SERVER=smtp.gmail.com

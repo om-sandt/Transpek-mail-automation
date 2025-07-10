@@ -27,37 +27,22 @@ SMTP_PASSWORD = os.getenv('SMTP_PASSWORD')
 if not SMTP_PASSWORD:
     raise ValueError("SMTP_PASSWORD environment variable is required")
 
+# Type assertions to satisfy linter
+assert DATABASE_URL is not None
+assert SMTP_USERNAME is not None
+assert SMTP_PASSWORD is not None
+
 # Flask app URL (for approval/rejection links)
 FLASK_APP_URL = os.getenv('FLASK_APP_URL', 'http://localhost:5000')
 
-# Table configuration for monitoring
+# Table configuration for monitoring - only IM purchase requisition
 TABLE_CONFIG = {
-    'approval_requests': {
-        'table_name': 'approval_requests',
-        'id_column': 'id',
-        'data_column': 'data',
-        'email_column': 'approver_email',
-        'status_column': 'status',
-        'pending_value': 'Pending',
-        'subject_type': 'Approval Request',
-        'route_prefix': 'legacy'
-    },
-    'job_work_report': {
-        'table_name': 'job_work_report',
-        'id_column': 'id',
-        'data_column': '"OBJECTIVE_OF_JOB_CARD"',
-        'email_column': 'approver_email',
-        'status_column': '"Approved"',
-        'pending_value': 0,
-        'subject_type': 'Job Work Report',
-        'route_prefix': 'job-work'
-    },
     'im_purchase_requisition': {
-        'table_name': 'im_purchase_requisition',
-        'id_column': 'id',
-        'data_column': '"Posting_Description"',
+        'table_name': '[Transpek Industry Limited$TPT_IM Purch_ Req_ Header$114fe92f-996b-45f1-94bb-c0d5b6ba317e]',
+        'id_column': 'timestamp',
+        'data_column': 'Posting_Description',
         'email_column': 'approver_email',
-        'status_column': '"Status"',
+        'status_column': 'Status',
         'pending_value': 0,
         'subject_type': 'IM Purchase Requisition',
         'route_prefix': 'im-purchase'
@@ -65,7 +50,8 @@ TABLE_CONFIG = {
 }
 
 def get_pending_requests():
-    """Query database for pending approval requests from all configured tables"""
+    """Query database for pending IM purchase requisitions"""
+    assert DATABASE_URL is not None
     engine = create_engine(DATABASE_URL)
     pending = []
     
@@ -73,12 +59,16 @@ def get_pending_requests():
         for table_key, config in TABLE_CONFIG.items():
             try:
                 # Build dynamic query based on configuration - only get requests where email_sent is False
+                # and approver_email is valid (contains @ and .)
                 query = f"""
                     SELECT {config['id_column']}, {config['data_column']}, 
                            {config['email_column']}, '{table_key}' as source
                     FROM {config['table_name']}
                     WHERE {config['status_column']} = :pending_value 
-                    AND (email_sent IS NULL OR email_sent = FALSE)
+                    AND (email_sent IS NULL OR email_sent = 0)
+                    AND {config['email_column']} IS NOT NULL 
+                    AND {config['email_column']} != ''
+                    AND {config['email_column']} LIKE '%@%.%'
                 """
                 
                 result = conn.execute(text(query), {'pending_value': config['pending_value']})
@@ -86,7 +76,7 @@ def get_pending_requests():
                 pending.extend(table_pending)
                 
                 if table_pending:
-                    print(f"Found {len(table_pending)} pending requests in {config['table_name']}")
+                    print(f"Found {len(table_pending)} pending requests with valid emails in {config['table_name']}")
                     
             except Exception as e:
                 print(f"Error querying {config['table_name']}: {str(e)}")
@@ -94,13 +84,14 @@ def get_pending_requests():
     
     return pending
 
-def send_approval_email(request_id, data, approver_email, source='legacy'):
+def send_approval_email(request_id, data, approver_email, source='im_purchase_requisition'):
     """Send approval email with PDF attachment and action buttons"""
     
     # Get table configuration
-    table_config = TABLE_CONFIG.get(source, TABLE_CONFIG['approval_requests'])
+    table_config = TABLE_CONFIG.get(source, TABLE_CONFIG['im_purchase_requisition'])
     
     # Fetch actual record data for PDF generation
+    assert DATABASE_URL is not None
     engine = create_engine(DATABASE_URL)
     record_data = None
     
@@ -134,12 +125,13 @@ def send_approval_email(request_id, data, approver_email, source='legacy'):
     # Create email
     msg = MIMEMultipart('alternative')
     msg['Subject'] = f'{table_config["subject_type"]} #{request_id} - Action Required'
+    assert SMTP_USERNAME is not None
     msg['From'] = SMTP_USERNAME
     msg['To'] = approver_email
     
     # Build approval/rejection URLs based on table configuration
-    approve_url = f"{FLASK_APP_URL}/quick-approve-{table_config['route_prefix']}?id={request_id}"
-    reject_url = f"{FLASK_APP_URL}/quick-reject-{table_config['route_prefix']}?id={request_id}"
+    approve_url = f"{FLASK_APP_URL}/quick-approve-{table_config['route_prefix']}?id={request_id}&action=approve"
+    reject_url = f"{FLASK_APP_URL}/quick-reject-{table_config['route_prefix']}?id={request_id}&action=reject"
     
     # HTML email body with approval/rejection buttons
     html_body = f"""
@@ -170,7 +162,7 @@ def send_approval_email(request_id, data, approver_email, source='legacy'):
             <div class="content">
                 <h3>Request Details:</h3>
                 <p><strong>Request ID:</strong> {request_id}</p>
-                <p><strong>Data:</strong></p>
+                <p><strong>Description:</strong></p>
                 <pre style="background-color: #f8f9fa; padding: 10px; border-radius: 3px; white-space: pre-wrap;">{data[:500]}{'...' if len(data) > 500 else ''}</pre>
                 
                 <div class="buttons">
@@ -183,7 +175,7 @@ def send_approval_email(request_id, data, approver_email, source='legacy'):
             </div>
             
             <div class="footer">
-                <p>This is an automated message from the Approval Workflow System.</p>
+                <p>This is an automated message from the Transpek IM Purchase Requisition System.</p>
                 <p>If you have any questions, please contact the system administrator.</p>
             </div>
         </div>
@@ -199,94 +191,82 @@ def send_approval_email(request_id, data, approver_email, source='legacy'):
     pdf_attachment = MIMEBase('application', 'pdf')
     pdf_attachment.set_payload(pdf_content)
     encoders.encode_base64(pdf_attachment)
-    pdf_attachment.add_header('Content-Disposition', 'attachment', 
-                             filename=f'{table_config["subject_type"].lower().replace(" ", "_")}_{request_id}.pdf')
+    pdf_attachment.add_header('Content-Disposition', 'attachment', filename=f'requisition_{request_id}.pdf')
     msg.attach(pdf_attachment)
     
     # Send email
     try:
+        assert SMTP_USERNAME is not None
+        assert SMTP_PASSWORD is not None
         with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
             server.starttls()
             server.login(SMTP_USERNAME, SMTP_PASSWORD)
             server.send_message(msg)
-        print(f"Email sent successfully to {approver_email} for {table_config['subject_type']} #{request_id}")
+        
+        print(f"✅ Email sent successfully to {approver_email} for request #{request_id}")
         return True
+        
     except Exception as e:
-        print(f"Failed to send email to {approver_email} for {table_config['subject_type']} #{request_id}: {str(e)}")
+        print(f"❌ Error sending email to {approver_email} for request #{request_id}: {str(e)}")
         return False
 
 def mark_email_sent(request_id, source):
-    """Mark that an email has been sent for this request"""
+    """Mark that an email has been sent for a specific request"""
+    assert DATABASE_URL is not None
     engine = create_engine(DATABASE_URL)
+    table_config = TABLE_CONFIG.get(source, TABLE_CONFIG['im_purchase_requisition'])
     
-    with engine.connect() as conn:
-        try:
-            # Get table configuration
-            table_config = TABLE_CONFIG.get(source, TABLE_CONFIG['approval_requests'])
-            
-            # Update the email_sent flag
-            update_query = f"""
+    try:
+        with engine.connect() as conn:
+            query = f"""
                 UPDATE {table_config['table_name']}
-                SET email_sent = TRUE
+                SET email_sent = 1
                 WHERE {table_config['id_column']} = :request_id
             """
-            
-            conn.execute(text(update_query), {'request_id': request_id})
+            conn.execute(text(query), {'request_id': request_id})
             conn.commit()
-            print(f"Marked email as sent for {table_config['subject_type']} #{request_id}")
+            print(f"✅ Marked email as sent for request #{request_id}")
             
-        except Exception as e:
-            print(f"Error marking email as sent for request #{request_id}: {str(e)}")
-            conn.rollback()
+    except Exception as e:
+        print(f"❌ Error marking email as sent for request #{request_id}: {str(e)}")
 
 def main():
     """Main function to process pending requests and send emails"""
-    print("Starting approval workflow email processor...")
-    print(f"Monitoring {len(TABLE_CONFIG)} tables: {', '.join(TABLE_CONFIG.keys())}")
+    print("🚀 Starting IM Purchase Requisition Email Processor")
+    print("=" * 60)
     
     while True:
         try:
+            print(f"\n📧 Checking for pending requests at {time.strftime('%Y-%m-%d %H:%M:%S')}")
+            
             # Get pending requests
             pending_requests = get_pending_requests()
             
-            if pending_requests:
-                print(f"Found {len(pending_requests)} total pending requests")
-                
-                for i, request in enumerate(pending_requests):
-                    try:
-                        print(f"Processing request {i+1}/{len(pending_requests)}")
-                        
-                        if len(request) == 4:
-                            request_id, data, approver_email, source = request
-                        else:
-                            request_id, data, approver_email = request
-                            source = 'approval_requests'
-                        
-                        print(f"Request ID: {request_id}, Source: {source}, Email: {approver_email}")
-                        
-                        if send_approval_email(request_id, data, approver_email, source):
-                            mark_email_sent(request_id, source)
-                        else:
-                            print(f"Failed to process request #{request_id}")
-                            
-                    except Exception as e:
-                        print(f"Error processing individual request: {str(e)}")
-                        print(f"Request data: {request}")
-                        import traceback
-                        traceback.print_exc()
-                        continue
+            if not pending_requests:
+                print("No pending requests found.")
             else:
-                print("No pending requests found")
+                print(f"Found {len(pending_requests)} pending requests to process.")
+                
+                for request_id, data, approver_email, source in pending_requests:
+                    print(f"\nProcessing request #{request_id} for {approver_email}...")
+                    
+                    # Send email
+                    if send_approval_email(request_id, data, approver_email, source):
+                        # Mark as sent
+                        mark_email_sent(request_id, source)
+                    else:
+                        print(f"Failed to send email for request #{request_id}")
             
-            # Wait before next check (5 minutes)
-            print("Waiting 5 minutes before next check...")
-            time.sleep(300)
+            # Wait before next check
+            print(f"\n⏰ Waiting 60 seconds before next check...")
+            time.sleep(60)
             
+        except KeyboardInterrupt:
+            print("\n\n🛑 Email processor stopped by user.")
+            break
         except Exception as e:
-            print(f"Error in main loop: {str(e)}")
-            import traceback
-            traceback.print_exc()
-            print("Waiting 1 minute before retrying...")
+            print(f"\n❌ Error in main loop: {str(e)}")
+            print("Waiting 60 seconds before retrying...")
             time.sleep(60)
 
 if __name__ == "__main__":

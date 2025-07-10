@@ -9,7 +9,7 @@
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
                     <h1><i class="fas fa-shopping-cart text-success"></i> IM Purchase Requisitions</h1>
-                    <p class="text-muted">Manage and track purchase requisitions</p>
+                    <p class="text-muted">Manage and track purchase requisitions for Transpek Industry Limited</p>
                 </div>
                 <a href="{{ url_for('submit_im_purchase') }}" class="btn btn-success">
                     <i class="fas fa-plus"></i> Submit New Requisition
@@ -40,10 +40,10 @@
                                     <tr>
                                         <th>No.</th>
                                         <th>Employee</th>
-                                        <th>Reference</th>
+                                        <th>Description</th>
                                         <th>Request Date</th>
                                         <th>Expected Receipt</th>
-                                        <th>Location</th>
+                                        <th>Department</th>
                                         <th>Status</th>
                                         <th>Approver Email</th>
                                         <th>Created</th>
@@ -54,7 +54,7 @@
                                     {% for requisition in requisitions %}
                                     <tr>
                                         <td>
-                                            <strong>{{ requisition.No }}</strong>
+                                            <strong>{{ requisition.No_ }}</strong>
                                         </td>
                                         <td>
                                             <div>
@@ -63,13 +63,13 @@
                                             </div>
                                         </td>
                                         <td>
-                                            <div class="text-truncate" style="max-width: 150px;" title="{{ requisition.Your_Reference }}">
-                                                {{ requisition.Your_Reference[:50] }}{% if requisition.Your_Reference|length > 50 %}...{% endif %}
+                                            <div class="text-truncate" style="max-width: 200px;" title="{{ requisition.Posting_Description }}">
+                                                {{ requisition.Posting_Description[:50] }}{% if requisition.Posting_Description|length > 50 %}...{% endif %}
                                             </div>
                                         </td>
                                         <td>
                                             <small class="text-muted">
-                                                {{ requisition.Request_Date }}
+                                                {{ requisition.Request_Date.strftime('%Y-%m-%d') if requisition.Request_Date else 'N/A' }}
                                             </small>
                                         </td>
                                         <td>
@@ -78,7 +78,7 @@
                                             </small>
                                         </td>
                                         <td>
-                                            <span class="badge bg-secondary">{{ requisition.Location_Code }}</span>
+                                            <span class="badge bg-secondary">{{ requisition.Indenting_Department }}</span>
                                         </td>
                                         <td>
                                             {% if requisition.Status == 1 %}
@@ -100,13 +100,23 @@
                                         </td>
                                         <td>
                                             <small class="text-muted">
-                                                {{ requisition.Document_Type.strftime('%Y-%m-%d %H:%M') if requisition.Document_Type else 'N/A' }}
+                                                {{ requisition.SystemCreatedAt.strftime('%Y-%m-%d %H:%M') if requisition.SystemCreatedAt else 'N/A' }}
                                             </small>
                                         </td>
                                         <td>
                                             <div class="btn-group" role="group">
+                                                {% if requisition.Status == 0 %}
+                                                    <a href="{{ url_for('quick_approve_im_purchase', id=requisition.timestamp) }}" 
+                                                       class="btn btn-sm btn-outline-success">
+                                                        <i class="fas fa-check"></i> Approve
+                                                    </a>
+                                                    <a href="{{ url_for('quick_reject_im_purchase', id=requisition.timestamp) }}" 
+                                                       class="btn btn-sm btn-outline-danger">
+                                                        <i class="fas fa-times"></i> Reject
+                                                    </a>
+                                                {% endif %}
                                                 <button type="button" class="btn btn-sm btn-outline-danger" 
-                                                        onclick="confirmDelete({{ requisition.id }}, 'IM purchase requisition')">
+                                                        onclick="confirmDelete('{{ requisition.timestamp }}', 'IM purchase requisition')">
                                                     <i class="fas fa-trash"></i> Delete
                                                 </button>
                                             </div>

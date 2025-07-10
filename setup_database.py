@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
 """
-Database Setup Script for Approval Workflow System
+Database Setup Script for Transpek IM Purchase Requisition System
 
-This script helps you set up the PostgreSQL database for the approval workflow system.
+This script helps you set up the MS SQL Server database for the IM purchase requisition system.
 """
 
 import os
 import sys
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
-from models import db, ApprovalRequest, JobWorkReport, IMPurchaseRequisition
+from models import db, IMPurchaseRequisition
+import re
 
 def check_database_connection(database_url):
     """Test database connection"""
@@ -23,136 +24,197 @@ def check_database_connection(database_url):
         print(f"❌ Database connection failed: {str(e)}")
         return False
 
-def create_tables(database_url):
-    """Create database tables"""
+def check_table_exists(database_url):
+    """Check if the IM purchase requisition table exists"""
     try:
         engine = create_engine(database_url)
+        table_name = 'Transpek Industry Limited$TPT_IM Purch_ Req_ Header$114fe92f-996b-45f1-94bb-c0d5b6ba317e'
         
-        # Create tables
-        db.metadata.create_all(engine)
-        print("✅ Database tables created successfully!")
-        
-        # Verify table creation
         with engine.connect() as conn:
-            tables_to_check = ['approval_requests', 'job_work_report', 'im_purchase_requisition']
-            for table_name in tables_to_check:
-                result = conn.execute(text("""
-                    SELECT table_name 
-                    FROM information_schema.tables 
-                    WHERE table_schema = 'public' 
-                    AND table_name = :table_name
-                """), {'table_name': table_name})
-                if result.fetchone():
-                    print(f"✅ {table_name} table verified!")
-                else:
-                    print(f"❌ {table_name} table creation verification failed!")
-                    return False
+            result = conn.execute(text("""
+                SELECT table_name 
+                FROM information_schema.tables 
+                WHERE table_name = :table_name
+            """), {'table_name': table_name})
+            
+            if result.fetchone():
+                print(f"✅ Table {table_name} exists!")
+                return True
+            else:
+                print(f"❌ Table {table_name} does not exist!")
+                return False
                 
-        return True
     except Exception as e:
-        print(f"❌ Error creating tables: {str(e)}")
+        print(f"❌ Error checking table: {str(e)}")
         return False
 
-def insert_sample_data(database_url):
-    """Insert sample data for testing"""
+def add_status_and_email_columns(database_url):
+    """Add Status and email_sent columns to existing table"""
     try:
         engine = create_engine(database_url)
-        
-        # Sample approval requests
-        sample_requests = [
-            {
-                'data': 'Request for new software license purchase\n\nSoftware: Adobe Creative Suite\nQuantity: 5 licenses\nCost: $2,500\nDepartment: Marketing\n\nThis purchase is needed for the upcoming campaign design work.',
-                'approver_email': 'manager@company.com',
-                'status': 'Pending'
-            },
-            {
-                'data': 'Travel request for conference attendance\n\nConference: TechCrunch Disrupt 2024\nLocation: San Francisco, CA\nDates: March 15-17, 2024\nEstimated Cost: $3,200\n\nThis conference will provide valuable insights into emerging technologies.',
-                'approver_email': 'hr@company.com',
-                'status': 'Pending'
-            },
-            {
-                'data': 'Hardware upgrade request\n\nEquipment: Dell XPS 15 Laptop\nSpecifications: 32GB RAM, 1TB SSD, RTX 4070\nQuantity: 1\nCost: $2,800\n\nCurrent laptop is 5 years old and no longer meets performance requirements.',
-                'approver_email': 'it@company.com',
-                'status': 'Approved',
-                'reason': 'Approved - Hardware is outdated and affecting productivity'
-            }
-        ]
+        table_name = 'Transpek Industry Limited$TPT_IM Purch_ Req_ Header$114fe92f-996b-45f1-94bb-c0d5b6ba317e'
         
         with engine.connect() as conn:
-            for request_data in sample_requests:
-                conn.execute(text("""
-                    INSERT INTO approval_requests (data, approver_email, status, reason)
-                    VALUES (:data, :approver_email, :status, :reason)
-                """), request_data)
-            conn.commit()
+            # Check if Status column exists
+            result = conn.execute(text("""
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_name = :table_name 
+                AND column_name = 'Status'
+            """), {'table_name': table_name})
             
-        print("✅ Sample data inserted successfully!")
-        return True
+            if not result.fetchone():
+                print("Adding Status column...")
+                conn.execute(text(f"ALTER TABLE [{table_name}] ADD Status INT DEFAULT 0"))
+                print("✅ Status column added!")
+            else:
+                print("✅ Status column already exists!")
+            
+            # Check if email_sent column exists
+            result = conn.execute(text("""
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_name = :table_name 
+                AND column_name = 'email_sent'
+            """), {'table_name': table_name})
+            
+            if not result.fetchone():
+                print("Adding email_sent column...")
+                conn.execute(text(f"ALTER TABLE [{table_name}] ADD email_sent BIT DEFAULT 0"))
+                print("✅ email_sent column added!")
+            else:
+                print("✅ email_sent column already exists!")
+            
+            # Check if approver_email column exists
+            result = conn.execute(text("""
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_name = :table_name 
+                AND column_name = 'approver_email'
+            """), {'table_name': table_name})
+            
+            if not result.fetchone():
+                print("Adding approver_email column...")
+                conn.execute(text(f"ALTER TABLE [{table_name}] ADD approver_email NVARCHAR(255)"))
+                print("✅ approver_email column added!")
+            else:
+                print("✅ approver_email column already exists!")
+            
+            conn.commit()
+            print("✅ All required columns added successfully!")
+            return True
+            
     except Exception as e:
-        print(f"❌ Error inserting sample data: {str(e)}")
+        print(f"❌ Error adding columns: {str(e)}")
         return False
 
-def add_email_sent_columns():
-    """Add email_sent column to existing tables if it doesn't exist"""
-    import os
-    from dotenv import load_dotenv
-    load_dotenv()
-    
-    DATABASE_URL = os.getenv('DATABASE_URL')
-    if not DATABASE_URL:
-        raise ValueError("DATABASE_URL environment variable is required")
-    
-    engine = create_engine(DATABASE_URL)
-    
-    with engine.connect() as conn:
-        try:
-            # Check if email_sent column exists in job_work_report
-            result = conn.execute(text("""
-                SELECT column_name 
-                FROM information_schema.columns 
-                WHERE table_name = 'job_work_report' 
-                AND column_name = 'email_sent'
+def validate_approver_emails(database_url):
+    """Validate approver emails in the database"""
+    try:
+        engine = create_engine(database_url)
+        table_name = 'Transpek Industry Limited$TPT_IM Purch_ Req_ Header$114fe92f-996b-45f1-94bb-c0d5b6ba317e'
+        
+        with engine.connect() as conn:
+            # Get all records with approver_email
+            result = conn.execute(text(f"""
+                SELECT timestamp, approver_email 
+                FROM [{table_name}]
+                WHERE approver_email IS NOT NULL AND approver_email != ''
             """))
             
-            if not result.fetchone():
-                print("Adding email_sent column to job_work_report table...")
-                conn.execute(text("ALTER TABLE job_work_report ADD COLUMN email_sent BOOLEAN DEFAULT FALSE"))
+            records = result.fetchall()
+            valid_emails = []
+            invalid_emails = []
             
-            # Check if email_sent column exists in im_purchase_requisition
-            result = conn.execute(text("""
-                SELECT column_name 
-                FROM information_schema.columns 
-                WHERE table_name = 'im_purchase_requisition' 
-                AND column_name = 'email_sent'
-            """))
+            # Email validation regex
+            email_pattern = re.compile(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
             
-            if not result.fetchone():
-                print("Adding email_sent column to im_purchase_requisition table...")
-                conn.execute(text("ALTER TABLE im_purchase_requisition ADD COLUMN email_sent BOOLEAN DEFAULT FALSE"))
+            for record in records:
+                timestamp, email = record
+                if email and email_pattern.match(email):
+                    valid_emails.append((timestamp, email))
+                else:
+                    invalid_emails.append((timestamp, email))
             
-            # Check if email_sent column exists in approval_requests
-            result = conn.execute(text("""
-                SELECT column_name 
-                FROM information_schema.columns 
-                WHERE table_name = 'approval_requests' 
-                AND column_name = 'email_sent'
-            """))
+            print(f"✅ Found {len(valid_emails)} valid approver emails")
+            if invalid_emails:
+                print(f"⚠️  Found {len(invalid_emails)} invalid approver emails:")
+                for timestamp, email in invalid_emails[:5]:  # Show first 5
+                    print(f"   - Record {timestamp}: {email}")
+                if len(invalid_emails) > 5:
+                    print(f"   ... and {len(invalid_emails) - 5} more")
             
-            if not result.fetchone():
-                print("Adding email_sent column to approval_requests table...")
-                conn.execute(text("ALTER TABLE approval_requests ADD COLUMN email_sent BOOLEAN DEFAULT FALSE"))
+            return valid_emails, invalid_emails
+            
+    except Exception as e:
+        print(f"❌ Error validating emails: {str(e)}")
+        return [], []
+
+def update_invalid_emails(database_url, invalid_emails):
+    """Update invalid emails with a default email"""
+    if not invalid_emails:
+        return True
+        
+    try:
+        engine = create_engine(database_url)
+        table_name = 'Transpek Industry Limited$TPT_IM Purch_ Req_ Header$114fe92f-996b-45f1-94bb-c0d5b6ba317e'
+        default_email = 'approver@transpek.com'
+        
+        with engine.connect() as conn:
+            for timestamp, _ in invalid_emails:
+                conn.execute(text(f"""
+                    UPDATE [{table_name}]
+                    SET approver_email = :default_email
+                    WHERE timestamp = :timestamp
+                """), {'default_email': default_email, 'timestamp': timestamp})
             
             conn.commit()
-            print("Email tracking columns added successfully!")
+            print(f"✅ Updated {len(invalid_emails)} invalid emails to {default_email}")
+            return True
             
-        except Exception as e:
-            print(f"Error adding email_sent columns: {str(e)}")
-            conn.rollback()
+    except Exception as e:
+        print(f"❌ Error updating invalid emails: {str(e)}")
+        return False
+
+def show_database_stats(database_url):
+    """Show database statistics"""
+    try:
+        engine = create_engine(database_url)
+        table_name = 'Transpek Industry Limited$TPT_IM Purch_ Req_ Header$114fe92f-996b-45f1-94bb-c0d5b6ba317e'
+        
+        with engine.connect() as conn:
+            # Total records
+            result = conn.execute(text(f"SELECT COUNT(*) FROM [{table_name}]"))
+            total_records = result.fetchone()
+            total_records = total_records[0] if total_records else 0
+            
+            # Pending records (Status = 0)
+            result = conn.execute(text(f"SELECT COUNT(*) FROM [{table_name}] WHERE Status = 0"))
+            pending_records = result.fetchone()
+            pending_records = pending_records[0] if pending_records else 0
+            
+            # Records with valid emails
+            result = conn.execute(text(f"""
+                SELECT COUNT(*) FROM [{table_name}] 
+                WHERE approver_email IS NOT NULL 
+                AND approver_email != '' 
+                AND approver_email LIKE '%@%.%'
+            """))
+            valid_email_records = result.fetchone()
+            valid_email_records = valid_email_records[0] if valid_email_records else 0
+            
+            print(f"\n📊 Database Statistics:")
+            print(f"   Total Records: {total_records}")
+            print(f"   Pending Records: {pending_records}")
+            print(f"   Records with Valid Emails: {valid_email_records}")
+            
+    except Exception as e:
+        print(f"❌ Error getting database stats: {str(e)}")
 
 def main():
     """Main setup function"""
-    print("🚀 Approval Workflow Database Setup")
-    print("=" * 50)
+    print("🚀 Transpek IM Purchase Requisition Database Setup")
+    print("=" * 60)
     
     # Load environment variables
     load_dotenv()
@@ -171,34 +233,39 @@ def main():
     print("Step 1: Testing database connection...")
     if not check_database_connection(database_url):
         print("\n💡 Troubleshooting tips:")
-        print("- Ensure PostgreSQL is running")
-        print("- Verify database exists: CREATE DATABASE approval_workflow;")
+        print("- Ensure MS SQL Server is running")
+        print("- Verify database exists")
         print("- Check username/password in DATABASE_URL")
-        print("- Ensure user has CREATE privileges")
+        print("- Install ODBC Driver 17 for SQL Server")
+        print("- Download from: https://docs.microsoft.com/en-us/sql/connect/odbc/download-odbc-driver-for-sql-server")
         sys.exit(1)
     
-    # Step 2: Create tables
-    print("\nStep 2: Creating database tables...")
-    if not create_tables(database_url):
-        print("\n💡 Troubleshooting tips:")
-        print("- Ensure user has CREATE TABLE privileges")
-        print("- Check if tables already exist")
+    # Step 2: Check if table exists
+    print("\nStep 2: Checking if table exists...")
+    if not check_table_exists(database_url):
+        print("\n💡 The table does not exist. Please ensure your database contains the required table.")
         sys.exit(1)
     
-    # Step 3: Insert sample data (optional)
-    print("\nStep 3: Insert sample data...")
-    response = input("Would you like to insert sample data for testing? (y/n): ").lower().strip()
-    if response in ['y', 'yes']:
-        if insert_sample_data(database_url):
-            print("📝 Sample data includes:")
-            print("  - Software license request (Pending)")
-            print("  - Travel request (Pending)")
-            print("  - Hardware upgrade (Approved)")
-        else:
-            print("⚠️  Sample data insertion failed, but setup is complete.")
+    # Step 3: Add required columns
+    print("\nStep 3: Adding required columns...")
+    if not add_status_and_email_columns(database_url):
+        print("\n💡 Error adding columns. Please check database permissions.")
+        sys.exit(1)
     
-    # Add email_sent columns
-    add_email_sent_columns()
+    # Step 4: Validate approver emails
+    print("\nStep 4: Validating approver emails...")
+    valid_emails, invalid_emails = validate_approver_emails(database_url)
+    
+    # Step 5: Update invalid emails if any
+    if invalid_emails:
+        print("\nStep 5: Updating invalid emails...")
+        response = input("Would you like to update invalid emails to a default email? (y/n): ").lower().strip()
+        if response in ['y', 'yes']:
+            update_invalid_emails(database_url, invalid_emails)
+    
+    # Step 6: Show database statistics
+    print("\nStep 6: Database statistics...")
+    show_database_stats(database_url)
     
     print("\n🎉 Database setup completed successfully!")
     print("\nNext steps:")
