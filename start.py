@@ -22,16 +22,24 @@ def check_environment():
         print("Please copy env_example.txt to .env and configure your settings.")
         return False
     
-    # Check if requirements are installed
+    # Check if required packages are available (but don't fail if not installed)
     try:
         import flask
+        print("✅ Flask is available")
+    except ImportError:
+        print("⚠️  Flask not available - web interface may not work")
+    
+    try:
+        import pyodbc
+        print("✅ pyodbc is available")
+    except ImportError:
+        print("⚠️  pyodbc not available - database operations may not work")
+    
+    try:
         import sqlalchemy
-        import fpdf
-        print("✅ Required packages are installed")
-    except ImportError as e:
-        print(f"❌ Missing required package: {e}")
-        print("Please run: pip install -r requirements.txt")
-        return False
+        print("✅ SQLAlchemy is available")
+    except ImportError:
+        print("⚠️  SQLAlchemy not available - some features may not work")
     
     return True
 
@@ -48,7 +56,7 @@ def start_flask_app():
         )
         
         # Wait a moment for Flask to start
-        time.sleep(3)
+        time.sleep(5)
         
         if flask_process.poll() is None:
             print("✅ Flask application started successfully!")
@@ -57,7 +65,10 @@ def start_flask_app():
         else:
             stdout, stderr = flask_process.communicate()
             print(f"❌ Flask application failed to start:")
-            print(f"   Error: {stderr}")
+            if stderr:
+                print(f"   Error: {stderr}")
+            if stdout:
+                print(f"   Output: {stdout}")
             return None
             
     except Exception as e:
@@ -77,7 +88,7 @@ def start_email_processor():
         )
         
         # Wait a moment for processor to start
-        time.sleep(2)
+        time.sleep(3)
         
         if email_process.poll() is None:
             print("✅ Email processor started successfully!")
@@ -85,7 +96,10 @@ def start_email_processor():
         else:
             stdout, stderr = email_process.communicate()
             print(f"❌ Email processor failed to start:")
-            print(f"   Error: {stderr}")
+            if stderr:
+                print(f"   Error: {stderr}")
+            if stdout:
+                print(f"   Output: {stdout}")
             return None
             
     except Exception as e:

@@ -1,8 +1,10 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 from models import db, IMPurchaseRequisition
+from db_utils import insert_im_purchase_req, setup_database
 from dotenv import load_dotenv
 import os
 from datetime import datetime
+import re  # Import re for regular expressions
 
 # Load environment variables
 load_dotenv()
@@ -22,6 +24,18 @@ def index():
     """Home page with navigation to different sections"""
     return render_template('index.html')
 
+@app.route('/health')
+def health_check():
+    """Health check endpoint"""
+    try:
+        # Test database connection
+        if setup_database():
+            return jsonify({"status": "healthy", "database": "connected"})
+        else:
+            return jsonify({"status": "unhealthy", "database": "disconnected"}), 500
+    except Exception as e:
+        return jsonify({"status": "unhealthy", "error": str(e)}), 500
+
 @app.route('/im-purchase-requisitions')
 def im_purchase_requisitions():
     """List all IM purchase requisitions"""
@@ -33,67 +47,81 @@ def submit_im_purchase():
     """Submit a new IM purchase requisition"""
     if request.method == 'POST':
         try:
-            # Create new IM purchase requisition
-            new_requisition = IMPurchaseRequisition()
-            new_requisition.timestamp = request.form.get('timestamp')
-            new_requisition.Document_Type = int(request.form.get('Document_Type', 0))
-            new_requisition.No_ = request.form.get('No_')
-            new_requisition.Employee_No = int(request.form.get('Employee_No', 0))
-            new_requisition.Employee_Name = request.form.get('Employee_Name')
-            new_requisition.Your_Reference = request.form.get('Your_Reference')
-            request_date = request.form.get('Request_Date')
-            new_requisition.Request_Date = datetime.fromisoformat(request_date) if request_date else datetime.utcnow()
-            posting_date = request.form.get('Posting_Date')
-            new_requisition.Posting_Date = datetime.fromisoformat(posting_date) if posting_date else datetime.utcnow()
-            expected_receipt_date = request.form.get('Expected_Receipt_Date')
-            new_requisition.Expected_Receipt_Date = datetime.fromisoformat(expected_receipt_date) if expected_receipt_date else datetime.utcnow()
-            new_requisition.Posting_Description = request.form.get('Posting_Description')
-            due_date = request.form.get('Due_Date')
-            new_requisition.Due_Date = datetime.fromisoformat(due_date) if due_date else datetime.utcnow()
-            new_requisition.Location_Code = request.form.get('Location_Code')
-            new_requisition.Shortcut_Dimension_1 = request.form.get('Shortcut_Dimension_1')
-            new_requisition.Shortcut_Dimension_2 = request.form.get('Shortcut_Dimension_2')
-            new_requisition.Shortcut_Dimension_3 = request.form.get('Shortcut_Dimension_3')
-            new_requisition.Comment = request.form.get('Comment')
-            new_requisition.Posting_No = int(request.form.get('Posting_No', 0))
-            new_requisition.Last_Posting_No = request.form.get('Last_Posting_No')
-            new_requisition.Reason_Code = request.form.get('Reason_Code')
-            new_requisition.Gen_Bus_Posting_Group = request.form.get('Gen_Bus_Posting_Group')
-            document_date = request.form.get('Document_Date')
-            new_requisition.Document_Date = datetime.fromisoformat(document_date) if document_date else datetime.utcnow()
-            new_requisition.NO_Series = request.form.get('NO_Series')
-            new_requisition.Posting_No_Series = request.form.get('Posting_No_Series')
-            new_requisition.Status = int(request.form.get('Status', 0))
-            new_requisition.Dimension_Set_ID = int(request.form.get('Dimension_Set_ID', 0))
-            new_requisition.Responsibility_Center = request.form.get('Responsibility_Center')
-            new_requisition.Assigned_User_ID = request.form.get('Assigned_User_ID')
-            new_requisition.Posted = int(request.form.get('Posted', 0))
-            new_requisition.Purchase_Type = request.form.get('Purchase_Type')
-            new_requisition.Indenting_Department = request.form.get('Indenting_Department')
-            new_requisition.Employee_Department = int(request.form.get('Employee_Department', 0))
-            new_requisition.Type_of_Jobwork = int(request.form.get('Type_of_Jobwork', 0))
-            new_requisition.Capital_Item_Premises = request.form.get('Capital_Item_Premises')
-            new_requisition.Shortcut_Dimension_3_Code = request.form.get('Shortcut_Dimension_3_Code')
-            new_requisition.Shortcut_Dimension_6_Code = request.form.get('Shortcut_Dimension_6_Code')
-            new_requisition.Indent_Type = int(request.form.get('Indent_Type', 0))
-            new_requisition.Approved_By = request.form.get('Approved_By')
-            approved_date = request.form.get('Approved_Date')
-            new_requisition.Approved_Date = datetime.fromisoformat(approved_date) if approved_date else datetime.utcnow()
-            approved_time = request.form.get('Approved_Time')
-            new_requisition.Approved_Time = datetime.fromisoformat(approved_time) if approved_time else datetime.utcnow()
-            new_requisition.Job_Card_No = request.form.get('Job_Card_No')
-            job_card_date = request.form.get('Job_Card_Date')
-            new_requisition.Job_Card_Date = datetime.fromisoformat(job_card_date) if job_card_date else datetime.utcnow()
-            new_requisition.Job_Task_NO = request.form.get('Job_Task_NO')
-            new_requisition.Approved_By_Account = int(request.form.get('Approved_By_Account', 0))
-            new_requisition.approver_email = request.form.get('approver_email')
+            # Validate required fields
+            required_fields = [
+                'Employee_No', 'Employee_Name', 'approver_email',
+                'Posting_Description', 'Purchase_Type', 'Indenting_Department'
+            ]
+            for field in required_fields:
+                if not request.form.get(field):
+                    raise ValueError(f"Missing required field: {field}")
             
-            db.session.add(new_requisition)
-            db.session.commit()
-            flash(f'IM Purchase Requisition #{new_requisition.No_} submitted successfully!', 'success')
-            return redirect(url_for('im_purchase_requisitions'))
+            # Prepare data for database insertion using the exact format
+            data = {
+                "$systemCreatedAt": datetime.now().isoformat() + "Z",
+                "$systemCreatedBy": "00000000-0000-0000-0000-000000000000",
+                "$systemId": "00000000-0000-0000-0000-000000000000",
+                "$systemModifiedAt": datetime.now().isoformat() + "Z",
+                "$systemModifiedBy": "00000000-0000-0000-0000-000000000000",
+                "Approved By": request.form.get('Approved_By', ''),
+                "Approved By Account Dept_": int(request.form.get('Approved_By_Account', 0)),
+                "Approved Date": "1753-01-01T00:00:00.000Z",
+                "Approved Time": "1753-01-01T00:00:00.000Z",
+                "Assigned User ID": request.form.get('Assigned_User_ID', ''),
+                "Capital Item Premises": int(request.form.get('Capital_Item_Premises', 0)),
+                "Comment": int(request.form.get('Comment', 0)),
+                "Dimension Set ID": int(request.form.get('Dimension_Set_ID', 0)),
+                "Document Date": request.form.get('Document_Date', ''),
+                "Document Type": int(request.form.get('Document_Type', 0)),
+                "Due Date": request.form.get('Due_Date', ''),
+                "Employee Department": request.form.get('Employee_Department', ''),
+                "Employee Name": request.form.get('Employee_Name', ''),
+                "Employee No_": request.form.get('Employee_No', ''),
+                "Expected Receipt Date": request.form.get('Expected_Receipt_Date', ''),
+                "Gen_ Bus_ Posting Group": request.form.get('Gen_Bus_Posting_Group', ''),
+                "Indent Type": int(request.form.get('Indent_Type', 0)),
+                "Indenting Department": request.form.get('Indenting_Department', ''),
+                "Job Card Date": "1753-01-01T00:00:00.000Z",
+                "Job Card No_": request.form.get('Job_Card_No', ''),
+                "Job Task No_": request.form.get('Job_Task_NO', ''),
+                "Last Posting No_": request.form.get('Last_Posting_No', ''),
+                "Location Code": request.form.get('Location_Code', ''),
+                "No_": request.form.get('No_', ''),
+                "No_ Series": request.form.get('NO_Series', ''),
+                "Posted": int(request.form.get('Posted', 0)),
+                "Posting Date": request.form.get('Posting_Date', ''),
+                "Posting Description": request.form.get('Posting_Description', ''),
+                "Posting No_": request.form.get('Posting_No', ''),
+                "Posting No_ Series": request.form.get('Posting_No_Series', ''),
+                "Purchase Type": int(request.form.get('Purchase_Type', 0)),
+                "Reason Code": request.form.get('Reason_Code', ''),
+                "Request Date": request.form.get('Request_Date', ''),
+                "Responsibility Center": request.form.get('Responsibility_Center', ''),
+                "Shortcut Dimension 1 Code": request.form.get('Shortcut_Dimension_1', ''),
+                "Shortcut Dimension 2 Code": request.form.get('Shortcut_Dimension_2', ''),
+                "Shortcut Dimension 2 Value": request.form.get('Indenting_Department', ''),
+                "Shortcut Dimension 3 Code": request.form.get('Shortcut_Dimension_3_Code', ''),
+                "Shortcut Dimension 6 Code": request.form.get('Shortcut_Dimension_6_Code', ''),
+                "Status": 2,  # Pending
+                "Type of Jobwork": int(request.form.get('Type_of_Jobwork', 0)),
+                "Your Reference": request.form.get('Your_Reference', ''),
+                "approver_mailid": request.form.get('approver_email', ''),
+                "email_send": None,
+                "status": None,
+                "timestamp": bytes.fromhex("00000000433780fd")
+            }
+            
+            # Insert data using the db_utils function
+            success = insert_im_purchase_req(data)
+            
+            if success:
+                flash(f'IM Purchase Requisition #{data["No_"]} submitted successfully!', 'success')
+                return redirect(url_for('im_purchase_requisitions'))
+            else:
+                flash('Error submitting IM purchase requisition: Database insertion failed', 'error')
+                return render_template('submit_im_purchase.html')
+            
         except Exception as e:
-            db.session.rollback()
             flash(f'Error submitting IM purchase requisition: {str(e)}', 'error')
             return render_template('submit_im_purchase.html')
     
@@ -197,4 +225,4 @@ def create_tables():
 
 if __name__ == '__main__':
     create_tables()
-    app.run(debug=True, host='0.0.0.0', port=5000) 
+    app.run(debug=True, host='0.0.0.0', port=5000)

@@ -7,6 +7,7 @@ This script helps you set up the MS SQL Server database for the IM purchase requ
 
 import os
 import sys
+import sqlalchemy
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
 from models import db, IMPurchaseRequisition
@@ -28,25 +29,38 @@ def check_table_exists(database_url):
     """Check if the IM purchase requisition table exists"""
     try:
         engine = create_engine(database_url)
-        table_name = 'Transpek Industry Limited$TPT_IM Purch_ Req_ Header$114fe92f-996b-45f1-94bb-c0d5b6ba317e'
+        table_name = '[Transpek Industry Limited$TPT_IM Purch_ Req_ Header$114fe92f-996b-45f1-94bb-c0d5b6ba317e]'
         
         with engine.connect() as conn:
-            result = conn.execute(text("""
-                SELECT table_name 
-                FROM information_schema.tables 
-                WHERE table_name = :table_name
-            """), {'table_name': table_name})
+            # Try to directly query the table with a simple TOP 1 query
+            # This is more reliable for Business Central databases
+            query = text(f"SELECT TOP 1 * FROM {table_name}")
+            result = conn.execute(query)
+            # Fetch all rows to close the cursor
+            rows = result.fetchall()
+            columns = result.keys()
             
-            if result.fetchone():
-                print(f"✅ Table {table_name} exists!")
-                return True
-            else:
-                print(f"❌ Table {table_name} does not exist!")
-                return False
-                
+            # If we get here, the table exists
+            print(f"✅ Table '{table_name}' exists!")
+            
+            # Get column information (optional)
+            print("\nTable columns:")
+            for col in columns:
+                print(f"  - {col}")
+        
+        # Use a separate connection for the count query    
+        with engine.connect() as conn:
+            # Count rows in the table
+            count_query = text(f"SELECT COUNT(*) FROM {table_name}")
+            count_result = conn.execute(count_query)
+            count = count_result.scalar()
+            print(f"\nTotal rows in table: {count}")
+            print("\n✅ Database setup verification complete! The table exists and is accessible.")
+            
     except Exception as e:
-        print(f"❌ Error checking table: {str(e)}")
-        return False
+        print(f"❌ Error accessing table: {e}")
+        print("\n💡 The table may not exist or you don't have access permissions.")
+        print("Please verify that the table name is correct and you have proper access.")
 
 def add_status_and_email_columns(database_url):
     """Add Status and email_sent columns to existing table"""
@@ -226,7 +240,8 @@ def main():
         print("See env_example.txt for reference.")
         sys.exit(1)
     
-    print(f"📊 Database URL: {database_url.split('@')[1] if '@' in database_url else 'Local database'}")
+    # Fix both the syntax error and variable name if needed)
+    print(f"📊 Database URL: {database_url.split('PWD=')[1] if 'PWD=' in database_url else '(hidden)'}")
     print()
     
     # Step 1: Test connection
@@ -275,4 +290,4 @@ def main():
     print("\nFor more information, see README.md")
 
 if __name__ == "__main__":
-    main() 
+    main()

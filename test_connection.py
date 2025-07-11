@@ -4,54 +4,91 @@ Test script to verify database connection and table access
 """
 
 import os
+import sqlalchemy
+from sqlalchemy import text
 from dotenv import load_dotenv
-from sqlalchemy import create_engine, text
+import smtplib
+from db_utils import get_purchase_requests, PURCHASE_REQ_TABLE
+
+# Load environment variables
+load_dotenv()
 
 def test_connection():
-    """Test database connection"""
-    load_dotenv()
-    
-    database_url = os.getenv('DATABASE_URL')
-    if not database_url:
-        print("❌ DATABASE_URL not found in .env file")
-        return False
-    
+    """Test database connection and query functionality"""
+    print("🔌 Testing database connection...")
     try:
-        print("🔌 Testing database connection...")
-        engine = create_engine(database_url)
+        # Create engine
+        engine = sqlalchemy.create_engine(os.getenv("DATABASE_URL"))
         
-        with engine.connect() as conn:
-            # Test basic connection
-            result = conn.execute(text("SELECT 1 as test"))
+        # Test connection
+        with engine.connect() as connection:
+            connection.execute(text("SELECT 1"))
             print("✅ Database connection successful!")
             
-            # Test table access
-            table_name = 'Transpek Industry Limited$TPT_IM Purch_ Req_ Header$114fe92f-996b-45f1-94bb-c0d5b6ba317e'
-            result = conn.execute(text(f"SELECT COUNT(*) FROM [{table_name}]"))
-            count = result.fetchone()
-            count = count[0] if count else 0
-            print(f"✅ Table access successful! Found {count} records")
-            
-            # Test column access
-            result = conn.execute(text(f"""
-                SELECT column_name 
-                FROM information_schema.columns 
-                WHERE table_name = :table_name 
-                AND column_name IN ('Status', 'email_sent', 'approver_email')
-            """), {'table_name': table_name})
-            
-            columns = [row[0] for row in result.fetchall()]
-            print(f"✅ Required columns found: {', '.join(columns)}")
-            
-            return True
-            
+            # Try to query the specific table
+            try:
+                with engine.connect() as new_connection:
+                    result = new_connection.execute(
+                        text(f"SELECT COUNT(*) FROM {PURCHASE_REQ_TABLE}")
+                    )
+                    count = result.scalar()
+                    print(f"✅ Table query successful! Found {count} purchase requisitions.")
+                    
+                    # Get sample records
+                    sample_query = text(f"SELECT TOP 5 * FROM {PURCHASE_REQ_TABLE}")
+                    sample = new_connection.execute(sample_query).fetchall()
+                    
+                    print("\nSample records:")
+                    for row in sample:
+                        print(f"Document: {row['No_']} | Employee: {row['Employee Name']} | Status: {row['Status']}")
+                    
+                    # Test email lookup
+                    approver_emails = []
+                    for row in sample:
+                        if row.get('approver_mailid'):
+                            approver_emails.append(f"{row['No_']}: {row['approver_mailid']}")
+                    
+                    if approver_emails:
+                        print("\nFound approver emails:")
+                        for email in approver_emails:
+                            print(f"  - {email}")
+                    else:
+                        print("\nNo approver emails found in sample data.")
+            except Exception as e:
+                print(f"❌ Table query failed: {e}")
+                
+            # Test email configuration
+            test_email_config()
+                
     except Exception as e:
-        print(f"❌ Connection failed: {str(e)}")
+        print(f"❌ Connection failed: {e}")
         print("\n💡 Troubleshooting:")
-        print("1. Install ODBC Driver 17 for SQL Server")
+        print("1. Install ODBC Driver 18 for SQL Server")
         print("2. Check your .env file has correct DATABASE_URL")
         print("3. Ensure SQL Server is running")
-        return False
+
+def test_email_config():
+    """Test SMTP email configuration"""
+    print("\n📧 Testing email configuration...")
+    
+    smtp_server = os.getenv("SMTP_SERVER")
+    smtp_port = int(os.getenv("SMTP_PORT", 587))
+    smtp_username = os.getenv("SMTP_USERNAME")
+    smtp_password = os.getenv("SMTP_PASSWORD")
+    
+    if not all([smtp_server, smtp_port, smtp_username, smtp_password]):
+        print("❌ SMTP settings not properly configured in .env file")
+        print("   Check your .env file for SMTP_* variables")
+        return
+    
+    try:
+        with smtplib.SMTP(smtp_server, smtp_port) as server:
+            server.starttls()
+            server.login(smtp_username, smtp_password)
+            print(f"✅ Successfully connected to SMTP server: {smtp_server}")
+    except Exception as e:
+        print(f"❌ SMTP connection failed: {e}")
+        print("   Please check your SMTP credentials and server settings")
 
 if __name__ == "__main__":
-    test_connection() 
+    test_connection()
